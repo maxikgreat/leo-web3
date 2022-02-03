@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "solhint": "solhint 'contracts/**/*.sol'",
+    "test": "npm run solhint && hardhat test"
   },
   "keywords": [],
   "author": "",
@@ -18,14 +19,13 @@
     "@types/chai": "^4.3.0",
     "@types/mocha": "^9.1.0",
     "@types/node": "^12.20.43",
-    "@typescript-eslint/eslint-plugin": "^4.33.0",
-    "@typescript-eslint/parser": "^4.33.0",
     "chai": "^4.3.6",
     "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.4",
     "hardhat": "^2.8.3",
     "hardhat-gas-reporter": "^1.0.7",
+    "prettier": "^2.5.1",
     "solhint": "^3.3.6",
     "solidity-coverage": "^0.7.18",
     "ts-node": "^10.4.0",
