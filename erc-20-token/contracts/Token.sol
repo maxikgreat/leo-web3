@@ -24,7 +24,7 @@ contract Token {
   event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
   constructor() {
-    balanceOf[msg.sender] = totalSupply;
+    balanceOf[msg.sender] = totalSupply();
   }
 
   function totalSupply() public view returns (uint256) {
@@ -51,7 +51,7 @@ contract Token {
   nonZeroAddress(_to)
   sufficientSenderBalance(_from, _value)
   returns (bool) {
-    require(allowance[_from][_to] >= _value, 'Now allowed to spend this value');
+    require(allowance[_from][_to] >= _value, 'Address not allowed to transfer');
     balanceOf[_from] -= _value;
     balanceOf[_to] += _value;
     allowance[_from][_to] -= _value;
