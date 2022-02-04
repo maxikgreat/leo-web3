@@ -1,12 +1,11 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import 'hardhat/console.sol';
-
 contract Token {
   string public name = 'Leocode Token';
   string public symbol = 'LEO';
   uint8 public decimals = 18;
+  uint256 public totalSupply = 100000000000000000000000;
   mapping(address => uint256) public balanceOf;
   mapping(address => mapping(address => uint256)) public allowance;
 
@@ -24,11 +23,7 @@ contract Token {
   event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
   constructor() {
-    balanceOf[msg.sender] = totalSupply();
-  }
-
-  function totalSupply() public view returns (uint256) {
-    return 100000 * (10 ** decimals);
+    balanceOf[msg.sender] = totalSupply;
   }
 
   function approve(address _spender, uint256 _value) public nonZeroAddress(_spender) returns (bool) {
