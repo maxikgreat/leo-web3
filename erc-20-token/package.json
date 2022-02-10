@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "solhint": "solhint 'contracts/**/*.sol'",
-    "test": "npm run solhint && hardhat test"
+    "test": "npm run solhint && hardhat test",
+    "node": "hardhat node",
+    "complile": "hardhat compile",
+    "deploy:local": "hardhat run --network localhost scripts/deploy.ts"
   },
   "keywords": [],
   "author": "",
