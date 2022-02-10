@@ -1,0 +1,24 @@
+.connector {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: center;
+    gap: 10px;
+    align-items: center;
+    padding: 20px;
+}
+
+.connector__option {
+    font-weight: bold;
+    font-size: 18px;
+    margin-top: 10px;
+    border: 2px solid gold;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.connector__loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
