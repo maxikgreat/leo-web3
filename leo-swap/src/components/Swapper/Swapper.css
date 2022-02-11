@@ -22,6 +22,23 @@
     white-space: nowrap;
 }
 
+.swapper__owner {
+    position: absolute;
+    bottom: -60px;
+    width: 450px;
+    border-radius: 8px;
+    padding: 15px 20px;
+    box-shadow: 0 1px 5px 2px rgba(0, 0, 0, 0.15);
+    background-color: ghostwhite;
+}
+
+.swapper__owner--withdraw {
+    color: gold;
+    text-decoration: underline;
+    font-weight: bold;
+    cursor: pointer;
+}
+
 .swapper__error-close {
     position: absolute;
     right: 12px;
