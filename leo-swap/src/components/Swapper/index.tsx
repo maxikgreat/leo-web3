@@ -1,11 +1,12 @@
-import {ChangeEventHandler, useCallback, useEffect, useMemo, useRef, useState, VFC} from 'react';
-import {Contract, utils} from 'ethers';
+import {ChangeEventHandler, useCallback, useEffect, useMemo, useState, VFC} from 'react';
+import {Contract,  utils} from 'ethers';
 import TokenSource from '../../contract/Token.json';
 import Addresses from '../../contract/addresses.json';
 import {Signer} from 'ethers';
 import {Token} from '../../contract/types';
 import {Loader} from '../../components/Loader';
 import './Swapper.css';
+import {getNormalizedError} from '../../errorHandler';
 
 interface SwapperProps {
   signer: Signer
@@ -22,6 +23,7 @@ interface BalancesState {
     }
   }
   rate?: number
+  isOwner: boolean
   isLoading: boolean
 }
 
@@ -37,10 +39,14 @@ interface PurchaseState {
 
 export const Swapper: VFC<SwapperProps> = ({signer}) => {
   const [token, setToken] = useState<Token | undefined>()
-  const [balances, setBalances] = useState<BalancesState>({
+  const [credits, setCredits] = useState<BalancesState>({
     isLoading: true,
+    isOwner: false,
   })
   const [purchase, setPurchase] = useState<PurchaseState>({
+    isLoading: false,
+  })
+  const [withdraw, setWithdraw] = useState<PurchaseState>({
     isLoading: false,
   })
   const [inputs, setInputs] = useState<InputsState>({
@@ -53,7 +59,7 @@ export const Swapper: VFC<SwapperProps> = ({signer}) => {
   }, [signer])
   
   const onEthValueChange: ChangeEventHandler<HTMLInputElement> = useCallback(({target: {value}}) => {
-    if (!balances.eth || !balances.rate) {
+    if (!credits.eth || !credits.rate) {
       return
     }
     
@@ -65,22 +71,23 @@ export const Swapper: VFC<SwapperProps> = ({signer}) => {
       return
     }
     
-    if (Number(value) > parseFloat(balances.eth)) {
+    if (Number(value) > parseFloat(credits.eth)) {
       return
     }
     
     setInputs({
       eth: Number(value),
-      leo: Number(value) * balances.rate
+      leo: Number(value) * credits.rate
     })
-  }, [balances.eth, balances.rate])
+  }, [credits.eth, credits.rate])
   
-  const getBalances = useCallback(async () => {
+  const getCredits = useCallback(async () => {
     if (!token) {
       return Promise.reject()
     }
     
     const signerAddress = await signer.getAddress()
+    const ownerAddress = await token.owner()
     const eth = await signer.getBalance()
     const leo = await token.balanceOf(signerAddress)
     const [unblockTime, tokens] = await token.vesting(signerAddress)
@@ -94,16 +101,40 @@ export const Swapper: VFC<SwapperProps> = ({signer}) => {
       }
     }
     
-    setBalances({
+    setCredits({
       eth: utils.formatEther(eth),
       leo: {
         summary: utils.formatEther(leo),
         ...(vesting ?? {}),
       },
       rate,
-      isLoading: false
+      isLoading: false,
+      isOwner: signerAddress === ownerAddress
     })
   },[signer, token])
+  
+  const onWithdraw = useCallback(async () => {
+    if (!token || withdraw.isLoading) {
+      return;
+    }
+    
+    setWithdraw({
+      isLoading: true
+    })
+    
+    try {
+      await token.withdrawToOwner()
+  
+      setWithdraw({
+        isLoading: false
+      })
+    } catch (err) {
+      setWithdraw({
+        error: getNormalizedError(err),
+        isLoading: false,
+      })
+    }
+  }, [token, withdraw])
   
   const onBuyLeo = useCallback(async () => {
     if (!token || !inputs.eth) {
@@ -118,7 +149,7 @@ export const Swapper: VFC<SwapperProps> = ({signer}) => {
     
     try {
       await token.buy({value})
-      await getBalances()
+      await getCredits()
       setPurchase({
         isLoading: false
       })
@@ -127,36 +158,17 @@ export const Swapper: VFC<SwapperProps> = ({signer}) => {
         leo: '',
       })
     } catch (err) {
-      let error = 'Unknown error'
-      
-      const message = (err as {message: string})?.message ?? ''
-      
-      if (message) {
-        error = message
-      }
-      
-      const nestedMessage = (err as {data: any})?.data?.message ?? ''
-      
-      if (nestedMessage?.includes('reverted with reason')) {
-        const extractedMessage = nestedMessage.split("'")
-        
-        const [, ...rest] = extractedMessage
-        
-        if (Array.isArray(rest)) {
-          error = rest.filter(string => string !== '').join("'")
-        }
-      }
-      
       setPurchase({
-        error,
+        error: getNormalizedError(err),
         isLoading: false,
       })
     }
-  }, [getBalances, inputs.eth, token])
+  }, [getCredits, inputs.eth, token])
   
   const onClearError = useCallback(() => {
     setPurchase(prevState => ({...prevState, error: undefined}))
-  }, [setPurchase])
+    setWithdraw(prevState => ({...prevState, error: undefined}))
+  }, [setPurchase, setWithdraw])
   
   
   useEffect(() => {
@@ -164,51 +176,56 @@ export const Swapper: VFC<SwapperProps> = ({signer}) => {
       return;
     }
   
-    getBalances()
-  }, [getBalances, token])
+    getCredits()
+  }, [getCredits, token])
   
   const isBuyDisabled = useMemo(() =>
-    purchase.isLoading || !Boolean(balances.eth && inputs.eth && inputs.eth > 0 && inputs.eth <= parseFloat(balances.eth)),
-    [balances.eth, inputs.eth, purchase.isLoading]
+    purchase.isLoading || !Boolean(credits.eth && inputs.eth && inputs.eth > 0 && inputs.eth <= parseFloat(credits.eth)),
+    [credits.eth, inputs.eth, purchase.isLoading]
   )
   
   return (
     <div className="swapper__container">
-      {purchase.error && (
+      {(purchase.error || withdraw.error) && (
         <div className="swapper__error">
-          {purchase.error}
+          {purchase.error || withdraw.error}
           <span className="swapper__error-close" onClick={onClearError}>&times;</span>
         </div>
       )}
-      {balances.isLoading
+      {credits.isOwner && (
+        <div className="swapper__owner">
+          You are owner. <span className="swapper__owner--withdraw" onClick={onWithdraw}>{withdraw.isLoading ? 'Loading...' : 'Withdraw funds'}</span>
+        </div>
+      )}
+      {credits.isLoading
         ? <Loader />
         : (
           <>
             <div className="swapper__item-container">
-              {balances.eth && (
+              {credits.eth && (
                 <span className="swapper__input-label">
-                  <span className="eth-text">ETH balance:</span> {balances.eth}
+                  <span className="eth-text">ETH balance:</span> {credits.eth}
                 </span>
               )}
               <div className="swapper__input-container">
                 <label>give</label>
-                <input type="number" max={balances.eth ? parseFloat(balances.eth) : undefined} value={inputs.eth} onChange={onEthValueChange} className="swapper__input"/>
+                <input type="number" max={credits.eth ? parseFloat(credits.eth) : undefined} value={inputs.eth} onChange={onEthValueChange} className="swapper__input"/>
               </div>
             </div>
             <button className="swapper__button" disabled={isBuyDisabled} onClick={onBuyLeo}>
               {purchase.isLoading ? 'wait...' : 'swap'}
             </button>
             <div className="swapper__item-container">
-              {balances.leo?.summary && (
+              {credits.leo?.summary && (
                 <span className="swapper__input-label">
-                  <span className="leo-text">LEO balance:</span> {balances.leo.summary}
+                  <span className="leo-text">LEO balance:</span> {credits.leo.summary}
                 </span>
               )}
-              {balances.leo?.free && (
-                <span className="free-tokens-text">Free: {balances.leo.free}</span>
+              {credits.leo?.free && (
+                <span className="free-tokens-text">Free: {credits.leo.free}</span>
               )}
-              {balances.leo?.blocked && (
-                <span className="blocked-tokens-text">Blocked: {balances.leo.blocked.value} (until {balances.leo.blocked.until})</span>
+              {credits.leo?.blocked && (
+                <span className="blocked-tokens-text">Blocked: {credits.leo.blocked.value} (until {credits.leo.blocked.until})</span>
               )}
               <div className="swapper__input-container">
                 <label>get</label>

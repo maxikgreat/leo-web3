@@ -1,6 +1,6 @@
 import {Dispatch, SetStateAction, VFC} from 'react';
 import './Connect.css'
-import * as ethers from 'ethers';
+import {providers} from 'ethers';
 import {SignerState} from '../../App';
 import {Loader} from '../../components/Loader';
 
@@ -14,10 +14,15 @@ interface ConnectProps {
 }
 
 export const Connect: VFC<ConnectProps> = ({setSigner, isLoading}) => {
-  const setProvider = async (_provider: any) => {
-    const provider = new ethers.providers.Web3Provider(_provider)
+  const setSignerHandler = async (_provider: any, requestAccounts = true) => {
+    const provider = new providers.Web3Provider(_provider)
+  
     
-    await provider.send("eth_requestAccounts", []);
+    if (requestAccounts) {
+      await provider.send("eth_requestAccounts", []);
+    }
+    
+  
     setSigner({
       account: provider.getSigner(),
       isLoading: false,
@@ -28,7 +33,7 @@ export const Connect: VFC<ConnectProps> = ({setSigner, isLoading}) => {
     setSigner({isLoading: true})
     try {
       if (window.ethereum) {
-        await setProvider(window.ethereum)
+        await setSignerHandler(window.ethereum)
       } else {
         alert('You have no metamask installed')
       }
@@ -52,8 +57,8 @@ export const Connect: VFC<ConnectProps> = ({setSigner, isLoading}) => {
       });
       
       await walletProvider.enable();
-      await setProvider(walletProvider)
-      
+  
+      await setSignerHandler(walletProvider,false)
     } catch (error) {
       setSigner({
         isLoading: false,
