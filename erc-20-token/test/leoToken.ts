@@ -1,10 +1,10 @@
 import { expect } from "chai";
-import { Token } from "../typechain/Token";
+import { LeoToken } from "../typechain/LeoToken";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-describe('Token', () => {
-  let token: Token
+describe('Leo token', () => {
+  let token: LeoToken
   const decimals = 18;
   const tokensQuantity = 100000
   // trying to calculate with numbers throws and overflow exception
@@ -28,8 +28,8 @@ describe('Token', () => {
   }
   
   beforeEach(async () => {
-    const Token = await ethers.getContractFactory('Token');
-    token = await Token.deploy();
+    const LeoToken = await ethers.getContractFactory('LeoToken');
+    token = await LeoToken.deploy();
     await token.deployed();
     vestingPeriod = await token.vestingPeriod();
   })
