@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicensed
 pragma solidity ^0.8.0;
 
-contract Token {
+contract LeoToken {
   struct Vesting {
     uint256 unblockTime;
     uint256 tokens;
