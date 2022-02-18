@@ -13,8 +13,8 @@ contract Token {
   uint256 public totalSupply = 100000000000000000000000;
 
   address public owner;
-  uint8 public ethRate = 100;
-  uint32 public vestingPeriod = 7 days;
+  uint8 public constant ethRate = 100;
+  uint32 public constant vestingPeriod = 7 days;
 
   mapping(address => uint256) public balanceOf;
   mapping(address => mapping(address => uint256)) public allowance;
@@ -25,7 +25,15 @@ contract Token {
     _;
   }
 
-  modifier sufficientSenderBalance(address _sender, uint256 _value) {
+  event Transfer(address indexed _from, address indexed _to, uint256 _value);
+  event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+
+  constructor() {
+    owner = msg.sender;
+    balanceOf[address(this)] = totalSupply;
+  }
+
+  function adjustSenderBalance(address _sender, uint256 _value) private {
     uint256 freeTokens = balanceOf[_sender];
 
     if (vesting[_sender].unblockTime > block.timestamp) {
@@ -35,15 +43,6 @@ contract Token {
     }
 
     require(freeTokens >= _value, 'Not enough tokens to transfer');
-    _;
-  }
-
-  event Transfer(address indexed _from, address indexed _to, uint256 _value);
-  event Approval(address indexed _owner, address indexed _spender, uint256 _value);
-
-  constructor() {
-    owner = msg.sender;
-    balanceOf[address(this)] = totalSupply;
   }
 
   function withdrawToOwner() external {
@@ -71,8 +70,8 @@ contract Token {
 
   function transfer(address _to, uint256 _value) public
   nonZeroAddress(_to)
-  sufficientSenderBalance(msg.sender, _value)
   returns (bool) {
+    adjustSenderBalance(msg.sender, _value);
     balanceOf[msg.sender] -= _value;
     balanceOf[_to] += _value;
     emit Transfer(msg.sender, _to, _value);
@@ -81,8 +80,8 @@ contract Token {
 
   function transferFrom(address _from, address _to, uint256 _value) public
   nonZeroAddress(_to)
-  sufficientSenderBalance(_from, _value)
   returns (bool) {
+    adjustSenderBalance(_from, _value);
     require(allowance[_from][_to] >= _value, 'Address not allowed to transfer');
     balanceOf[_from] -= _value;
     balanceOf[_to] += _value;
