@@ -1,52 +1,68 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
 import { artifacts, ethers } from "hardhat";
 import { Contract } from "ethers";
 import fs from "fs";
 import path from "path";
 
-function saveFrontendFiles(token: Contract) {
-  const contractDir = path.join(__dirname, '..', '..', 'leo-swap', 'src', 'contract');
+interface ContractToGenerate {
+  contract: Contract
+  name: string
+}
+
+function saveFrontendFiles(contracts: ContractToGenerate[]) {
+  const contractDir = path.join(__dirname, '..', '..', 'leo-swap', 'src', 'contracts');
+  const contractAbisDir = path.join(__dirname, '..', '..', 'leo-swap', 'src', 'contracts', 'abis');
   
   if (!fs.existsSync(contractDir)) {
     fs.mkdirSync(contractDir)
   }
   
-  fs.writeFileSync(
-    path.join(contractDir, 'addresses.json'),
-    JSON.stringify({Token: token.address}, undefined, 2)
-  )
+  const addresses = JSON.stringify(contracts.reduce((acc, { contract, name }) =>
+    ({...acc, [name]: contract.address}),
+    {}), undefined, 2)
   
   fs.writeFileSync(
-    path.join(contractDir, 'Token.json'),
-    JSON.stringify(artifacts.readArtifactSync('Token'), null, 2)
+    path.join(contractDir, 'addresses.json'),
+    addresses
   )
+  
+  if (!fs.existsSync(contractAbisDir)) {
+    fs.mkdirSync(contractAbisDir)
+  }
+  
+  contracts.forEach(({name}) => {
+    fs.writeFileSync(
+      path.join(contractAbisDir, `${name}.json`),
+      JSON.stringify(artifacts.readArtifactSync(name), null, 2)
+    )
+  })
+}
+
+async function deployContract(name: string) {
+  const Contract = await ethers.getContractFactory(name);
+  const contract = await Contract.deploy();
+  
+  await contract.deployed();
+  
+  console.log(`Contract ${name} deployed to:`, contract.address);
+  
+  return {contract, name}
 }
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
-
-  // We get the contract to deploy
-  const Token = await ethers.getContractFactory("Token");
-  const token = await Token.deploy();
+  const contractsDir = path.join(__dirname, '..', 'contracts')
   
-  await token.deployed();
- 
-  console.log("Token deployed to:", token.address);
+  const files = fs.readdirSync(contractsDir)
   
-  saveFrontendFiles(token)
+  if (!files) {
+    return Promise.reject('No files present in contracts directory')
+  }
+  const contractNames = files.map(file => file.split('.')?.[0])
+  
+  const deployedContracts = await Promise.all(contractNames.map((name) => deployContract(name)))
+  
+  saveFrontendFiles(deployedContracts)
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
