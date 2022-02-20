@@ -47,7 +47,8 @@ describe('Leo token', () => {
     expect(contractBalance.eq(totalSupply)).to.equal(true)
   })
   
-  it('should sell tokens and put vesting restrictions', async () => {
+  // vesting disabled
+  xit('should sell tokens and put vesting restrictions', async () => {
     const [{ address: buyerAddress }, anotherBuyer] = await ethers.getSigners();
     const ethRate = await token.ethRate();
     
