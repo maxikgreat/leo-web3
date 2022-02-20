@@ -1,11 +1,13 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {BigNumber, Signer, utils} from 'ethers';
+import {Signer, utils} from 'ethers';
 import {LeoToken, UsdtToken} from '../contracts/types';
+import {getNormalizedError} from '../errorHandler';
 
 interface Balance {
   eth: string
   leo: {
     summary: string
+    ethRate: number
     free?: string
     blocked?: {
       until: string
@@ -23,6 +25,11 @@ interface UsdtMinting {
   error?: string
 }
 
+interface LeoPurchase {
+  isLoading: boolean
+  error?: string
+}
+
 interface UseBalanceProps {
   signer: Signer,
   leoToken: LeoToken
@@ -30,6 +37,7 @@ interface UseBalanceProps {
 }
 
 const defaultMintValue = 10
+const defaultEthBuyValue = '1'
 
 export const useBalance = ({
   signer, leoToken, usdtToken
@@ -38,6 +46,7 @@ export const useBalance = ({
     eth: '0.0',
     leo: {
       summary: '0.0',
+      ethRate: 0,
     },
     usdt: '0.0',
     isLoading: true,
@@ -48,7 +57,43 @@ export const useBalance = ({
     decimals: 0,
   })
   
-  const onMint = useCallback(async () => {
+  const [leoPurchase, setLeoPurchase] = useState<LeoPurchase>({
+    isLoading: false,
+  })
+  
+  const onLeoBuy = useCallback(async () => {
+    setLeoPurchase({
+      isLoading: true,
+    })
+    
+    try {
+      const ethValue = utils.parseEther(defaultEthBuyValue)
+      const tx = await leoToken.buy({value: ethValue})
+      await tx.wait()
+      const signerAddress = await signer.getAddress()
+      const eth = await signer.getBalance()
+      const leo = await leoToken.balanceOf(signerAddress)
+      setLeoPurchase({
+        isLoading: false,
+      })
+      setBalance(prevState => ({
+        ...prevState,
+        eth: utils.formatEther(eth),
+        leo: {
+          ...prevState.leo,
+          summary: utils.formatEther(leo),
+        }
+      }))
+    } catch (err) {
+      setLeoPurchase({
+        isLoading: false,
+        error: getNormalizedError(err)
+      })
+    }
+    
+  }, [leoToken, balance, signer])
+  
+  const onUsdtMint = useCallback(async () => {
     if (usdtMinting.decimals === 0) {
       return
     }
@@ -60,25 +105,28 @@ export const useBalance = ({
     
     try {
       const tokensToMint = defaultMintValue * (10 ** usdtMinting.decimals)
-      await usdtToken.mint(tokensToMint)
+      const tx = await usdtToken.mint(tokensToMint)
+      await tx.wait()
+      const signerAddress = await signer.getAddress()
+      const eth = await signer.getBalance()
+      const usdt = await usdtToken.balanceOf(signerAddress)
+      
       setUsdtMinting(prevState => ({
         ...prevState,
         isLoading: false
       }))
       
-      
       setBalance(prevState => ({
         ...prevState,
-        usdt: utils.formatUnits(
-          BigNumber.from(utils.parseUnits(prevState.usdt, usdtMinting.decimals)).add(BigNumber.from(tokensToMint)), usdtMinting.decimals
-        )
+        eth: utils.formatEther(eth),
+        usdt: utils.formatUnits(usdt, usdtMinting.decimals)
       }))
       
     } catch (err) {
       setUsdtMinting(prevState => ({
         ...prevState,
         isLoading: false,
-        error: (err as {message: string})?.message ?? 'Unexpected error'
+        error: getNormalizedError(err)
       }))
     }
     
@@ -98,6 +146,7 @@ export const useBalance = ({
       const signerAddress = await signer.getAddress()
       const eth = await signer.getBalance()
       const leo = await leoToken.balanceOf(signerAddress)
+      const ethRate = await leoToken.ethRate()
       const usdt = await usdtToken.balanceOf(signerAddress)
       const [unblockTime, tokens] = await leoToken.vesting(signerAddress)
   
@@ -112,6 +161,7 @@ export const useBalance = ({
       setBalance({
         eth: utils.formatEther(eth),
         leo: {
+          ethRate,
           summary: utils.formatEther(leo),
           ...(vesting ?? {}),
         },
@@ -119,16 +169,17 @@ export const useBalance = ({
         isLoading: false,
       })
     } catch (error) {
-      setBalance(prevState => ({...prevState, error: (error as {message?: string})?.message ?? 'Unexpected error', isLoading: false}))
+      setBalance(prevState => ({...prevState, error: getNormalizedError(error), isLoading: false}))
     }
   }, [signer, leoToken, usdtToken, usdtMinting.decimals])
   
   const clearError = useCallback(() => {
     setBalance(prevState => ({...prevState, error: undefined}))
     setUsdtMinting(prevState => ({...prevState, error: undefined}))
+    setLeoPurchase(prevState => ({...prevState, error: undefined}))
   }, [setBalance])
   
-  const error = useMemo(() => balance.error ?? usdtMinting.error, [balance.error, usdtMinting.error])
+  const error = useMemo(() => balance.error ?? usdtMinting.error ?? leoPurchase.error, [balance.error, usdtMinting.error, leoPurchase.error])
   
   useEffect(() => {
     getUsdtDecimals()
@@ -143,5 +194,5 @@ export const useBalance = ({
   }, [usdtMinting.decimals])
   
   
-  return {balance, clearError, isUsdtMinting: usdtMinting.isLoading, error, onMint}
+  return {balance, clearError, isUsdtMinting: usdtMinting.isLoading, error, onUsdtMint, onLeoBuy, isLeoPurchase: leoPurchase.isLoading}
 }

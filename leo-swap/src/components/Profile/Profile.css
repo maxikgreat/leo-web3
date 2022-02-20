@@ -76,6 +76,14 @@
     cursor: pointer;
 }
 
+.leo--buy {
+    display: inline-block;
+    font-size: 17px;
+    border: 2px solid gold;
+    padding: 0 5px;
+    cursor: pointer;
+}
+
 .card.card--nft {
     grid-area: nft;
     border: 2px solid black;

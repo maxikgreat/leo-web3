@@ -14,7 +14,8 @@ contract LeoToken {
 
   address public owner;
   uint8 public constant ethRate = 100;
-  uint32 public constant vestingPeriod = 7 days;
+  // vesting disabled
+  uint32 public constant vestingPeriod = 0 days;
 
   mapping(address => uint256) public balanceOf;
   mapping(address => mapping(address => uint256)) public allowance;

@@ -6,16 +6,7 @@ describe('Usdt token', () => {
   let token: UsdtToken
   const decimals = 6;
   
-  // const exceptions = {
-  //   zeroAddress: 'Address 0x0 is not allowed',
-  //   insufficientBalance: 'Not enough tokens to transfer',
-  //   notAllowedTransfer: 'Address not allowed to transfer',
-  //   vestingRestriction: 'You\'ve already bought tokens on this week',
-  //   zeroEther: 'Min eth value to buy tokens is 1 wei',
-  //   insufficientTotalSupply: 'Not enough tokens to buy',
-  //   noPermissions: 'You have no rights to do this operation'
-  // }
-  //
+  
   beforeEach(async () => {
     const UsdtToken = await ethers.getContractFactory('UsdtToken');
     token = await UsdtToken.deploy();

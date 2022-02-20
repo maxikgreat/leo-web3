@@ -1,4 +1,4 @@
-import {useCallback, useMemo, VFC} from 'react';
+import {useCallback, useMemo, useState, VFC} from 'react';
 import './Profile.css';
 import {useBalance} from '../../hooks/useBalance';
 import {Signer} from 'ethers';
@@ -14,7 +14,7 @@ interface ProfileProps {
 }
 
 export const Profile: VFC<ProfileProps> = (props) => {
-  const {balance, clearError, isUsdtMinting, error, onMint} = useBalance(props)
+  const {balance, clearError, isUsdtMinting, error, onUsdtMint, onLeoBuy, isLeoPurchase} = useBalance(props)
   
   const {isOwner, isLoading: isWithdrawToOwner, onWithdraw, error: ownerError, clearError: clearOwnerError} = useOwner({
     leoToken: props.leoToken,
@@ -46,14 +46,18 @@ export const Profile: VFC<ProfileProps> = (props) => {
         </div>
         <div className={'card card--leo'}>
           <div className={'card__header'}>
-            <h3 className={'card__symbol'}>LEO</h3><img className={'card__icon'} src="https://i.postimg.cc/NFXnB4Xc/leo-cutout.png" alt="leo"/>
+            <h3 className={'card__symbol'}>
+              LEO
+              {isLeoPurchase ? <Loader size={'small'} /> : <span className={'leo--buy'} onClick={onLeoBuy}>buy</span>}
+            </h3>
+            <img className={'card__icon'} src="https://i.postimg.cc/NFXnB4Xc/leo-cutout.png" alt="leo"/>
           </div>
           <p className={'card__balance'}>{balance.leo.summary}</p>
         </div>
         <div className={'card card--usdt'}>
           <div className="card__header">
             <h3 className={'card__symbol'}>USDT
-              {isUsdtMinting ? <Loader size={'small'} /> : <span className={'usdt--mint'} onClick={onMint}>mint</span>}
+              {isUsdtMinting ? <Loader size={'small'} /> : <span className={'usdt--mint'} onClick={onUsdtMint}>mint</span>}
             </h3>
             <img className={'card__icon'} src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="usdt"/>
           </div>
