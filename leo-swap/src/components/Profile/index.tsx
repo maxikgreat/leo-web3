@@ -2,7 +2,7 @@ import {useCallback, useMemo, useState, VFC} from 'react';
 import './Profile.css';
 import {useBalance} from '../../hooks/useBalance';
 import {Signer} from 'ethers';
-import {LeoToken, UsdtToken} from '../../contracts/types';
+import {LeoNft, LeoToken, UsdtToken} from '../../contracts/types';
 import {Loader} from '../../components/Loader';
 import {Error} from '../../components/Error';
 import {useOwner} from '../../hooks/useOwner';
@@ -11,6 +11,7 @@ interface ProfileProps {
   signer: Signer,
   leoToken: LeoToken
   usdtToken: UsdtToken
+  leoNft: LeoNft
 }
 
 export const Profile: VFC<ProfileProps> = (props) => {
@@ -64,8 +65,20 @@ export const Profile: VFC<ProfileProps> = (props) => {
           <p className={'card__balance'}>{balance.usdt}</p>
         </div>
         <div className={'card card--nft'}>
-          <div className="card__header">
+          <div className="card__header card__header--nft">
             <h3 className={'card__symbol'}>NFT</h3>
+            {balance.nfts.length === 0 ? (
+              <span className="no-nft">You have no NFT's</span>
+            ) : (
+              <div className="nfts">
+                {balance.nfts.map(nft => (
+                  <div key={nft.id} className="nft">
+                    <img className="nft__image" src={nft.image} alt={nft.name}/>
+                    <span className="nft__name">{nft.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

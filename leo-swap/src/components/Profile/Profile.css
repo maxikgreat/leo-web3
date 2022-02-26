@@ -35,6 +35,42 @@
     align-items: center;
 }
 
+.no-nft {
+    font-size: 25px;
+    color: gray;
+}
+
+.nfts {
+    display: flex;
+    gap: 5px;
+    height: 100%;
+}
+
+.nft {
+    position: relative;
+    height: 100%;
+    width: 150px;
+}
+
+.nft__image {
+    height: 100% !important;
+    width: 100% !important;
+    object-fit: cover !important;
+}
+
+.nft__name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    background-color: gold;
+    padding: 0 5px;
+}
+
+.card__header--nft {
+    height: 100%;
+}
+
 .card__symbol {
     font-size: 45px;
 }

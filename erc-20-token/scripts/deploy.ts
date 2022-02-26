@@ -2,6 +2,7 @@ import { artifacts, ethers } from "hardhat";
 import { Contract } from "ethers";
 import fs from "fs";
 import path from "path";
+import { LeoToken } from "../typechain/LeoToken";
 
 interface ContractToGenerate {
   contract: Contract
@@ -37,9 +38,20 @@ function saveFrontendFiles(contracts: ContractToGenerate[]) {
   })
 }
 
-async function deployContract(name: string) {
+async function deployToken(name: string) {
   const Contract = await ethers.getContractFactory(name);
   const contract = await Contract.deploy();
+  
+  await contract.deployed();
+  
+  console.log(`Contract ${name} deployed to:`, contract.address);
+  
+  return {contract, name}
+}
+
+async function deployMarket(name: string, leoAddress: string, usdtAddress: string, nftAddress: string) {
+  const Contract = await ethers.getContractFactory(name);
+  const contract = await Contract.deploy(leoAddress, usdtAddress, nftAddress);
   
   await contract.deployed();
   
@@ -56,11 +68,15 @@ async function main() {
   if (!files) {
     return Promise.reject('No files present in contracts directory')
   }
-  const contractNames = files.map(file => file.split('.')?.[0])
+  const tokenNames = ['LeoToken', 'UsdtToken', 'LeoNft']
   
-  const deployedContracts = await Promise.all(contractNames.map((name) => deployContract(name)))
+  const [leoToken, usdtToken, nftToken] = await Promise.all(tokenNames.map((name) => deployToken(name)))
   
-  saveFrontendFiles(deployedContracts)
+  const market = await deployMarket('Market', leoToken.contract.address, usdtToken.contract.address, nftToken.contract.address)
+  
+  await (leoToken.contract as LeoToken).chargeMarket(market.contract.address)
+  
+  saveFrontendFiles([leoToken, usdtToken, nftToken, market])
 }
 
 main().catch((error) => {

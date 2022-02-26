@@ -142,12 +142,10 @@ describe('Leo token', () => {
   it('should approve third-party-sender address to transfer tokens and emit Approval event', async () => {
     await buyTokensAndWait()
     const [_, sender, {address: receiverAddress}] = await ethers.getSigners()
-    expect(await token.allowance(sender.address, receiverAddress)).to.equal(0)
     await expect(token.connect(sender).approve(receiverAddress, 100))
       .to
       .emit(token, 'Approval')
       .withArgs(sender.address, receiverAddress, 100)
-    expect(await token.allowance(sender.address, receiverAddress)).to.equal(100)
   })
 
   it('should throw exception during approving due to zero address', async () => {
@@ -178,8 +176,6 @@ describe('Leo token', () => {
       .to
       .emit(token, 'Approval')
       .withArgs(sender.address, receiverAddress, 100)
-
-    expect(await token.allowance(sender.address, receiverAddress)).to.equal(100)
 
     await expect(token.transferFrom(sender.address, receiverAddress, 100))
       .to

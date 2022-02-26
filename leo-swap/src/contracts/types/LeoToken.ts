@@ -21,10 +21,10 @@ import { TypedEventFilter, TypedEvent, TypedListener, OnEvent } from "./common";
 export interface LeoTokenInterface extends utils.Interface {
   contractName: "LeoToken";
   functions: {
-    "allowance(address,address)": FunctionFragment;
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "buy()": FunctionFragment;
+    "chargeMarket(address)": FunctionFragment;
     "decimals()": FunctionFragment;
     "ethRate()": FunctionFragment;
     "name()": FunctionFragment;
@@ -39,15 +39,15 @@ export interface LeoTokenInterface extends utils.Interface {
   };
 
   encodeFunctionData(
-    functionFragment: "allowance",
-    values: [string, string]
-  ): string;
-  encodeFunctionData(
     functionFragment: "approve",
     values: [string, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(functionFragment: "buy", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "chargeMarket",
+    values: [string]
+  ): string;
   encodeFunctionData(functionFragment: "decimals", values?: undefined): string;
   encodeFunctionData(functionFragment: "ethRate", values?: undefined): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
@@ -75,10 +75,13 @@ export interface LeoTokenInterface extends utils.Interface {
     values?: undefined
   ): string;
 
-  decodeFunctionResult(functionFragment: "allowance", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "buy", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "chargeMarket",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "decimals", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "ethRate", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
@@ -154,12 +157,6 @@ export interface LeoToken extends BaseContract {
   removeListener: OnEvent<this>;
 
   functions: {
-    allowance(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
     approve(
       _spender: string,
       _value: BigNumberish,
@@ -170,6 +167,11 @@ export interface LeoToken extends BaseContract {
 
     buy(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    chargeMarket(
+      _marketAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     decimals(overrides?: CallOverrides): Promise<[number]>;
@@ -211,12 +213,6 @@ export interface LeoToken extends BaseContract {
     ): Promise<ContractTransaction>;
   };
 
-  allowance(
-    arg0: string,
-    arg1: string,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
-
   approve(
     _spender: string,
     _value: BigNumberish,
@@ -227,6 +223,11 @@ export interface LeoToken extends BaseContract {
 
   buy(
     overrides?: PayableOverrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  chargeMarket(
+    _marketAddress: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   decimals(overrides?: CallOverrides): Promise<number>;
@@ -268,12 +269,6 @@ export interface LeoToken extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    allowance(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     approve(
       _spender: string,
       _value: BigNumberish,
@@ -283,6 +278,11 @@ export interface LeoToken extends BaseContract {
     balanceOf(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     buy(overrides?: CallOverrides): Promise<BigNumber>;
+
+    chargeMarket(
+      _marketAddress: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     decimals(overrides?: CallOverrides): Promise<number>;
 
@@ -346,12 +346,6 @@ export interface LeoToken extends BaseContract {
   };
 
   estimateGas: {
-    allowance(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     approve(
       _spender: string,
       _value: BigNumberish,
@@ -362,6 +356,11 @@ export interface LeoToken extends BaseContract {
 
     buy(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    chargeMarket(
+      _marketAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     decimals(overrides?: CallOverrides): Promise<BigNumber>;
@@ -399,12 +398,6 @@ export interface LeoToken extends BaseContract {
   };
 
   populateTransaction: {
-    allowance(
-      arg0: string,
-      arg1: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     approve(
       _spender: string,
       _value: BigNumberish,
@@ -418,6 +411,11 @@ export interface LeoToken extends BaseContract {
 
     buy(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    chargeMarket(
+      _marketAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     decimals(overrides?: CallOverrides): Promise<PopulatedTransaction>;

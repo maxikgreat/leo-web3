@@ -278,7 +278,7 @@ export interface UsdtToken extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
-    mint(_value: BigNumberish, overrides?: CallOverrides): Promise<void>;
+    mint(_value: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
     name(overrides?: CallOverrides): Promise<string>;
 
