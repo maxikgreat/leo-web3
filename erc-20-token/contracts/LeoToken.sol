@@ -18,11 +18,16 @@ contract LeoToken {
   uint32 public constant vestingPeriod = 0 days;
 
   mapping(address => uint256) public balanceOf;
-  mapping(address => mapping(address => uint256)) public allowance;
+  mapping(address => mapping(address => uint256)) private allowance;
   mapping(address => Vesting) public vesting;
 
   modifier nonZeroAddress(address _address) {
     require(_address != address(0), 'Address 0x0 is not allowed');
+    _;
+  }
+
+  modifier isOwner() {
+    require(msg.sender == owner, 'You have no rights to do this operation');
     _;
   }
 
@@ -46,8 +51,15 @@ contract LeoToken {
     require(freeTokens >= _value, 'Not enough tokens to transfer');
   }
 
-  function withdrawToOwner() external {
-    require(msg.sender == owner, 'You have no rights to do this operation');
+  function chargeMarket(address _marketAddress) external isOwner nonZeroAddress(_marketAddress) {
+    uint256 tokens = 100 * (10 ** decimals);
+    require(totalSupply >= tokens, 'Not enough tokens');
+    balanceOf[address(this)] -= tokens;
+    balanceOf[_marketAddress] += tokens;
+    emit Transfer(address(this), _marketAddress, tokens);
+  }
+
+  function withdrawToOwner() external isOwner {
     (bool success,) = owner.call{value: address(this).balance}('');
     require(success, 'Failed to send ether');
   }

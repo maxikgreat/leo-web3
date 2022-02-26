@@ -36,6 +36,9 @@ export const Connect: VFC<ConnectProps> = ({setSigner, isLoading}) => {
         await setSignerHandler(window.ethereum)
       } else {
         alert('You have no metamask installed')
+        setSigner({
+          isLoading: false,
+        })
       }
     } catch (error) {
       setSigner({
@@ -52,6 +55,7 @@ export const Connect: VFC<ConnectProps> = ({setSigner, isLoading}) => {
       const walletProvider = new WalletConnectProvider.default({
         infuraId: 'ce14f5c2682147d58bcbbc567cba97a6',
         rpc: {
+          3: "https://ropsten.infura.io/v3/ce14f5c2682147d58bcbbc567cba97a6",
           31337: "http://localhost:8545",
         },
       });

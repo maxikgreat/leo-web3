@@ -6,13 +6,15 @@ import {
   Navigate, NavLink,
 } from "react-router-dom";
 import {Connect} from './components/Connect';
-import {Swapper} from './components/Swapper';
+import {Market} from './components/Market';
 import {Profile} from './components/Profile';
 import './App.css';
 import Addresses from './contracts/addresses.json';
 import LeoTokenSource from './contracts/abis/LeoToken.json'
 import UsdtTokenSource from './contracts/abis/UsdtToken.json'
-import {LeoToken, UsdtToken} from './contracts/types';
+import LeoNftSource from './contracts/abis/LeoNft.json'
+import MarketSource from './contracts/abis/Market.json'
+import {LeoToken, UsdtToken, Market as MarketType, LeoNft} from './contracts/types';
 
 declare global {
   interface Window {
@@ -29,6 +31,7 @@ export interface SignerState {
 interface TokensState {
   leoToken: LeoToken,
   usdtToken: UsdtToken
+  leoNft: LeoNft
 }
 
 const App = () => {
@@ -36,6 +39,7 @@ const App = () => {
     isLoading: false,
   })
   const [tokens, setTokens] = useState<TokensState | undefined>()
+  const [market, setMarket] = useState<MarketType | undefined>();
   
   useEffect(() => {
     if (!signer.account) {
@@ -45,7 +49,10 @@ const App = () => {
     setTokens({
       leoToken: new Contract(Addresses.LeoToken, LeoTokenSource.abi, signer.account) as LeoToken,
       usdtToken: new Contract(Addresses.UsdtToken, UsdtTokenSource.abi, signer.account) as UsdtToken,
+      leoNft: new Contract(Addresses.LeoNft, LeoNftSource.abi, signer.account) as LeoNft,
     })
+    
+    setMarket(new Contract(Addresses.Market, MarketSource.abi, signer.account) as MarketType)
   }, [signer])
   
   return (
@@ -61,10 +68,10 @@ const App = () => {
       </header>
       <main>
         <Routes>
-          {signer.account && tokens ? (
+          {(signer.account && tokens && market) ? (
             <>
               <Route path={'/profile'} element={<Profile signer={signer.account} {...tokens} />} />
-              <Route path={'/market'} element={<Swapper signer={signer.account} {...tokens}  />} />
+              <Route path={'/market'} element={<Market signer={signer.account} market={market} {...tokens}  />} />
               <Route path={'*'} element={<Navigate to={'/profile'} />} />
             </>
           ) : (

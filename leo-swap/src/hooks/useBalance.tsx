@@ -1,7 +1,13 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {Signer, utils} from 'ethers';
-import {LeoToken, UsdtToken} from '../contracts/types';
+import {LeoNft, LeoToken, UsdtToken} from '../contracts/types';
 import {getNormalizedError} from '../errorHandler';
+
+export interface Nft {
+  id: string
+  name: string
+  image: string
+}
 
 interface Balance {
   eth: string
@@ -15,6 +21,7 @@ interface Balance {
     }
   },
   usdt: string
+  nfts: Nft[],
   isLoading: boolean
   error?: string
 }
@@ -34,13 +41,14 @@ interface UseBalanceProps {
   signer: Signer,
   leoToken: LeoToken
   usdtToken: UsdtToken
+  leoNft: LeoNft
 }
 
 const defaultMintValue = 10
 const defaultEthBuyValue = '1'
 
 export const useBalance = ({
-  signer, leoToken, usdtToken
+  signer, leoToken, usdtToken, leoNft
 }: UseBalanceProps) => {
   const [balance, setBalance] = useState<Balance>({
     eth: '0.0',
@@ -49,6 +57,7 @@ export const useBalance = ({
       ethRate: 0,
     },
     usdt: '0.0',
+    nfts: [],
     isLoading: true,
   })
   
@@ -158,6 +167,16 @@ export const useBalance = ({
         }
       }
       
+      const nftIds = await leoNft.getTokens()
+      
+      const nfts: Nft[] = await Promise.all(nftIds.map(id =>  leoNft.uri(id).then(url => fetch(url)).then(response => response.json())))
+  
+      const filterNfts = (await Promise.all(nfts.map(nft => {
+          return leoNft.balanceOf(signerAddress, nft.id)
+        })))
+          .map((balance, index) => balance.isZero() ? null : ({...nfts[index], id: nfts[index].id.toString()}))
+          .filter(Boolean) as Nft[]
+      
       setBalance({
         eth: utils.formatEther(eth),
         leo: {
@@ -166,12 +185,13 @@ export const useBalance = ({
           ...(vesting ?? {}),
         },
         usdt: utils.formatUnits(usdt, usdtMinting.decimals),
+        nfts: filterNfts,
         isLoading: false,
       })
     } catch (error) {
       setBalance(prevState => ({...prevState, error: getNormalizedError(error), isLoading: false}))
     }
-  }, [signer, leoToken, usdtToken, usdtMinting.decimals])
+  }, [signer, leoToken, usdtToken, leoNft, usdtMinting.decimals])
   
   const clearError = useCallback(() => {
     setBalance(prevState => ({...prevState, error: undefined}))
