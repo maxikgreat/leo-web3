@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';
-import '@openzeppelin/contracts/token/ERC1155/IERC1155.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import 'hardhat/console.sol';
 import './LeoToken.sol';
@@ -42,7 +41,7 @@ contract Market is ERC1155Holder {
   }
 
   function swap(address _fromToken, address _toToken, uint256 _value) external isMyToken(_fromToken) isMyToken(_toToken) {
-    Rate memory rate = rate[_fromToken][_toToken];
+    Rate storage rate = rate[_fromToken][_toToken];
     uint256 sendValue = _value * rate.numerator / rate.denominator;
     uint256 commonDecimals = 10 ** (leoToken.decimals() - usdtToken.decimals());
 
@@ -52,7 +51,6 @@ contract Market is ERC1155Holder {
       sendValue *= commonDecimals;
     }
 
-    require(ERC20(_toToken).balanceOf(address(this)) >= sendValue, 'Not enough tokens to swap');
     ERC20(_fromToken).transferFrom(msg.sender, address(this), _value);
     ERC20(_toToken).transfer(msg.sender, sendValue);
   }
@@ -61,7 +59,7 @@ contract Market is ERC1155Holder {
     uint256 value = calculateNftPrice(_withToken);
 
     ERC20(_withToken).transferFrom(msg.sender, address(this), value);
-    IERC1155(address(leoNft)).safeTransferFrom(address(this), msg.sender, _tokenId, 1, '');
+    leoNft.safeTransferFrom(address(this), msg.sender, _tokenId, 1, '');
   }
 
   function sellNft(uint256 _tokenId, address _withToken) external isMyToken(_withToken) {
@@ -72,9 +70,8 @@ contract Market is ERC1155Holder {
   }
 
   function calculateNftPrice(address _withToken) private returns (uint256) {
-    Rate memory rate = rate[_withToken][address(leoNft)];
-    uint256 commonDecimals = 10 ** ERC20(_withToken).decimals();
-    return rate.numerator * commonDecimals / rate.denominator;
+    Rate storage rate = rate[_withToken][address(leoNft)];
+    return (rate.numerator * 10 ** ERC20(_withToken).decimals()) / rate.denominator;
   }
 
   function getAvailableLeo() external view returns (uint256) {
